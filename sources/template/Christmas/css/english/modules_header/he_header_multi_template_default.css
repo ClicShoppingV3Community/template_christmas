@@ -1,0 +1,113 @@
+/*
+ *
+ *  @copyright 2008 - https://www.clicshopping.org
+ *  @Brand : ClicShopping(Tm) at Inpi all right Reserved
+ *  @Licence GPL 2 & MIT
+ *  @licence MIT - Portion of osCommerce 2.4
+ *  @Info : https://www.clicshopping.org/forum/trademark/
+ *
+ */
+
+span.headerMultiTemplateDefaultTitle {
+  color:#fff;
+  padding-right: 0rem;
+}
+
+span.headerMultiTemplateDefaultTitle A {
+  color:#fff;
+  text-decoration: underline;
+}
+
+div.headerMultiTemplateDefaultLogo {
+  padding-top: 0rem;
+  padding-left:0rem;
+}
+
+span.headerMultiTemplateDefaultShoppingCartImage {
+  text-align: right;
+  padding-left:1rem;
+  padding-top:2rem;
+  color: #fff;
+}
+
+i.headerMultiTemplateDefaultShoppingCart {
+  color: #fff;
+  font-weight: bold;
+  padding-right: 0.5rem;
+  padding-top: 0rem;
+}
+
+a.headerMultiTemplateDefaultShoppingCart {
+  text-decoration:none;
+  color: #fff;
+}
+
+li.headerMultiTemplateDefaultShoppingCart {
+  list-style-type: none;
+  color: #fff;
+}
+
+span .headerMultiTemplateDefaultShoppingSmallCart {
+  color: #edac27;
+  font-weight: bold;
+  padding-right: 0.5rem;
+  padding-top: 0rem;
+}
+
+span.headerMultiTemplateDefaultCheckout {
+  color: #28a745;
+  font-weight: bold;
+  padding-right: 0.5rem;
+  padding-top: 0rem;
+}
+
+a.headerMultiTemplateDefaultCheckout {
+  color: #28a745;
+}
+
+span.headerMultiTemplateDefaultHeaderSearch {
+  padding-top:3rem;
+  text-align: center;
+  padding-bottom: 0.625rem;
+}
+
+
+span.headerMultiTemplateDefaultPasswordText {
+  padding-top: 0.3125rem;
+  color: #fff;
+}
+
+.headerMultiTemplateDefaultPasswordText a {
+}
+
+span.headerMultiTemplateDefaultLoginText {
+  color: #fff;
+  padding-top: 0.3125rem;
+}
+
+span.headerMultiTemplateDefaultLanguage {
+  padding-left: 0.3125rem;
+}
+
+li.headerMultiTemplateDefaultLanguage{
+  list-style-type:none;
+}
+
+.headerMultiTemplateDefaultCartLink {
+  padding-right: 5px;
+}
+
+a.headerMultiTemplateDefaultCartLink h2 {
+  font-size: 1rem!important;
+}
+
+.modal-title {
+  color: #000;
+}
+
+.advancedSearchLink {
+}
+
+.advancedSearchLink A{
+  color:#fff;
+}
