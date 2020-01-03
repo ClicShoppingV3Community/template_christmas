@@ -32,7 +32,10 @@ use ClicShopping\OM\HTML;
   </div>
   <div class="row">
     <div class="col-md-4">
-      <?php echo $total_reviews; ?>
+     <?php
+        //echo $total_reviews;
+        echo HTML::stars('4');
+    ?>
     </div>
     <div class="col-md-8">
       <span><?php echo $product_price; ?> </span>
