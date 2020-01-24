@@ -45,3 +45,4 @@ use ClicShopping\OM\HTML;
     </div>
   </div>
 </div>
+<?php echo $jsonLtd; ?>
