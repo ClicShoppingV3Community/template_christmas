@@ -13,7 +13,7 @@
   use ClicShopping\OM\Registry;
   use ClicShopping\OM\CLICSHOPPING;
 
-  class fp_new_products {
+  class fp_products_featured {
     public $code;
     public $group;
     public $title;
@@ -25,12 +25,12 @@
       $this->code = get_class($this);
       $this->group = basename(__DIR__);
 
-      $this->title = CLICSHOPPING::getDef('module_front_page_new_products_title');
-      $this->description = CLICSHOPPING::getDef('module_front_page_new_products_description');
+      $this->title = CLICSHOPPING::getDef('module_front_page_products_featured_title');
+      $this->description = CLICSHOPPING::getDef('module_front_page_products_featured_description');
 
-      if (defined('MODULE_FRONT_PAGE_NEW_PRODUCTS_STATUS')) {
-        $this->sort_order = (int)MODULE_FRONT_PAGE_NEW_PRODUCTS_SORT_ORDER;
-        $this->enabled = (MODULE_FRONT_PAGE_NEW_PRODUCTS_STATUS == 'True');
+      if (defined('MODULE_FRONT_PAGE_PRODUCTS_FEATURED_STATUS')) {
+        $this->sort_order = MODULE_FRONT_PAGE_PRODUCTS_FEATURED_SORT_ORDER;
+        $this->enabled = (MODULE_FRONT_PAGE_PRODUCTS_FEATURED_STATUS == 'True');
       }
     }
 
@@ -44,130 +44,96 @@
       $CLICSHOPPING_ProductsAttributes = Registry::get('ProductsAttributes');
       $CLICSHOPPING_Reviews = Registry::get('Reviews');
 
-      $new_products_category_id =  $CLICSHOPPING_Category->getID();
-
       if (CLICSHOPPING::getBaseNameIndex() && !$CLICSHOPPING_Category->getPath()) {
-        if (MODULE_FRONT_PAGE_NEW_PRODUCTS_MAX_DISPLAY != 0) {
+        if (MODULE_FRONT_PAGE_PRODUCTS_FEATURED_MAX_DISPLAY != 0) {
+
           if ($CLICSHOPPING_Customer->getCustomersGroupID() != 0) {
-            if ( (!isset($new_products_category_id)) || ($new_products_category_id == 0) ) {
-// Display products no inside categories
-              $Qproduct = $CLICSHOPPING_Db->prepare('select p.products_id,
-                                                            p.products_quantity as in_stock
-                                                    from :table_products p left join :table_products_groups g on p.products_id = g.products_id,
+// Requetes SQL pour afficher les nouveaux produits groupe B2B lorsque l'on ne ce trouve pas dans une categorie
+            $Qproduct = $CLICSHOPPING_Db->prepare('select p.products_id,
+                                                           p.products_quantity as in_stock
+                                                    from :table_products p  left join :table_products_groups g on p.products_id = g.products_id,
+                                                         :table_products_featured pf,                                                       
                                                          :table_products_to_categories p2c,
                                                          :table_categories c
-                                                    where g.customers_group_id = :customers_group_id
+                                                    where (p.products_status = 1
+                                                            and g.price_group_view = 1
+                                                           )
+                                                           or (p.products_status = 1
+                                                               and g.price_group_view <> 1
+                                                               )
+                                                    and pf.status = 1
+                                                    and p.products_id = pf.products_id
+                                                    and g.customers_group_id = :customers_group_id
                                                     and g.products_group_view = 1
-                                                    and p.products_status = 1
-                                                    and p.products_archive = 0
+                                                    and pf.products_id = p.products_id
+                                                    and pf.customers_group_id = 0
+                                                    and p.products_archive = 0                                                    
                                                     and p.products_id = p2c.products_id
                                                     and p2c.categories_id = c.categories_id
+                                                    and c.virtual_categories = 0
                                                     and c.status = 1
+                                                    and (pf.customers_group_id = :customers_group_id or pf.customers_group_id = 99)                                                    
                                                     group by p.products_id
                                                     order by rand(),
                                                              p.products_date_added DESC
                                                     limit :products_limit
                                                     ');
-              $Qproduct->bindInt(':customers_group_id', (int)$CLICSHOPPING_Customer->getCustomersGroupID());
-              $Qproduct->bindInt(':products_limit', (int)MODULE_FRONT_PAGE_NEW_PRODUCTS_MAX_DISPLAY);
-              $Qproduct->execute();
-            } else {
-// Requetes SQL pour afficher les nouveaux produits groupe B2B lorsque l'on se trouve dans une categorie
-              $Qproduct = $CLICSHOPPING_Db->prepare('select p.products_id,
-                                                            p.products_quantity as in_stock
-                                                      from :table_products p left join :table_products_groups g on p.products_id = g.products_id,
-                                                            :table_products_to_categories p2c,
-                                                            :table_categories c
-                                                      where p.products_id = p2c.products_id
-                                                      and p2c.categories_id = c.categories_id
-                                                      and c.parent_id = :parent_id
-                                                      and g.customers_group_id = :customers_group_id
-                                                      and g.products_group_view = 1
-                                                      and p.products_status = 1
-                                                      and p.products_archive = 0
-                                                      and c.virtual_categories = 0
-                                                      and c.status = 1
-                                                      group by p.products_id
-                                                      order by rand(),
-                                                               p.products_date_added DESC
-                                                      limit :products_limit
-                                                      ');
-              $Qproduct->bindInt(':parent_id', (int)$new_products_category_id);
-              $Qproduct->bindInt(':customers_group_id', $CLICSHOPPING_Customer->getCustomersGroupID());
-              $Qproduct->bindInt(':products_limit', MODULE_FRONT_PAGE_NEW_PRODUCTS_MAX_DISPLAY);
-              $Qproduct->execute();
-            }
+
+            $Qproduct->bindInt(':customers_group_id', (int)$CLICSHOPPING_Customer->getCustomersGroupID() );
+            $Qproduct->bindint(':products_limit', (int)MODULE_FRONT_PAGE_PRODUCTS_FEATURED_MAX_DISPLAY);
+            $Qproduct->execute();
           } else {
-            if (!isset($new_products_category_id) || ($new_products_category_id == 0)) {
-// Display products no inside categories
-              $Qproduct = $CLICSHOPPING_Db->prepare('select p.products_id,
-                                                            p.products_quantity as in_stock
+// Requetes SQL pour afficher les nouveaux produits lors que l'on ce trouve dans une categorie
+            $Qproduct = $CLICSHOPPING_Db->prepare('select p.products_id,
+                                                          p.products_quantity as in_stock
                                                     from :table_products p,
-                                                         :table_products_to_categories p2c,
-                                                         :table_categories c
+                                                         :table_products_featured pf,
+                                                         :table_products_description pd,                                                       
+                                                        :table_products_to_categories p2c,
+                                                        :table_categories c
                                                     where p.products_status = 1
-                                                    and products_view = 1
+                                                    and p.products_id = pf.products_id
+                                                    and pf.status = 1
+                                                    and p.products_view = 1
                                                     and p.products_archive = 0
+  
                                                     and p.products_id = p2c.products_id
                                                     and p2c.categories_id = c.categories_id
                                                     and c.virtual_categories = 0
                                                     and c.status = 1
+                                                    and (pf.customers_group_id = 0 or pf.customers_group_id = 99)                                                    
                                                     group by p.products_id
                                                     order by rand(),
                                                              p.products_date_added DESC
                                                     limit :products_limit
-                                                  ');
-              $Qproduct->bindInt(':products_limit', (int)MODULE_FRONT_PAGE_NEW_PRODUCTS_MAX_DISPLAY);
-              $Qproduct->execute();
-            } else {
-// Requetes SQL pour afficher les nouveaux produits lors que l'on ce trouve dans une categorie
-              $Qproduct = $CLICSHOPPING_Db->prepare('select p.products_id,
-                                                            p.products_quantity as in_stock
-                                                    from :table_products p,
-                                                         :table_products_to_categories p2c,
-                                                         :table_categories c
-                                                    where p.products_id = p2c.products_id
-                                                    and p2c.categories_id = c.categories_id
-                                                    and c.parent_id = :parent_id
-                                                    and p.products_status = 1
-                                                    and p.products_view = 1
-                                                    and p.products_archive = 0
-                                                    and c.virtual_categories = 0
-                                                    and c.status = 1
-                                                    group by p.products_id
-                                                    order by rand(),
-                                                             p.products_date_added DESC
-                                                    limit :products_limit
-                                                  ');
+                                            ');
 
-              $Qproduct->bindInt(':parent_id', (int)$new_products_category_id);
-              $Qproduct->bindInt(':products_limit', (int)MODULE_FRONT_PAGE_NEW_PRODUCTS_MAX_DISPLAY);
-              $Qproduct->execute();
-            }
+            $Qproduct->bindint(':products_limit', (int)MODULE_FRONT_PAGE_PRODUCTS_FEATURED_MAX_DISPLAY);
+            $Qproduct->execute();
           }
 
           if ($Qproduct->rowCount() > 0 ) {
 
 // display number of short description
-            $products_short_description_number = (int)MODULE_FRONT_PAGE_NEW_PRODUCTS_SHORT_DESCRIPTION;
+            $products_short_description_number = (int)MODULE_FRONT_PAGE_PRODUCTS_FEATURED_SHORT_DESCRIPTION;
 // delete words
-            $delete_word = (int)MODULE_FRONT_PAGE_NEW_PRODUCTS_SHORT_DESCRIPTION_DELETE_WORLDS;
+            $delete_word = (int)MODULE_FRONT_PAGE_PRODUCTS_FEATURED_SHORT_DESCRIPTION_DELETE_WORLDS;
 // nbr of column to display  boostrap
-            $bootstrap_column = (int)MODULE_FRONT_PAGE_NEW_PRODUCTS_COLUMNS;
+            $bootstrap_column = (int)MODULE_FRONT_PAGE_PRODUCTS_FEATURED_COLUMNS;
 // initialisation des boutons
             $size_button = $CLICSHOPPING_ProductsCommon->getSizeButton('md');
 
 // Template define
-            $filename = $CLICSHOPPING_Template->getTemplateModulesFilename($this->group .'/template_html/' . MODULE_FRONT_PAGE_NEW_PRODUCTS_TEMPLATE);
+            $filename = $CLICSHOPPING_Template-> getTemplateModulesFilename($this->group .'/template_html/' . MODULE_FRONT_PAGE_PRODUCTS_FEATURED_TEMPLATE);
 
-            $new_prods_content = '<!-- New Products start -->' . "\n";
+            $new_prods_content = '<!-- New Products featured Start -->' . "\n";
+            $new_prods_content .= '<div class="clearfix"></div>';
 
-            if (MODULE_FRONT_PAGE_NEW_PRODUCTS_FRONT_TITLE == 'True') {
-              $new_prods_content .= '<div class="ModuleFrontPageProductsNewHeading"><h2>' . CLICSHOPPING::getDef('module_front_page_new_products_heading_title') . '</h2></div>';
+            if (MODULE_FRONT_PAGE_PRODUCTS_FEATURED_FRONT_TITLE == 'True') {
+                $new_prods_content .= '<div class="page-title ModuleFrontPageProductsFeaturedHeading"><h2>' . CLICSHOPPING::getDef('module_front_page_products_featured_heading_title') . '</h2></div>';
             }
 
-//            $new_prods_content .= '<div class="row">';
-            $new_prods_content .= '<div class="d-flex flex-wrap ModuleFrontPageboxContainerNewProducts">';
+            $new_prods_content .= '<div class="d-flex flex-wrap ModuleFrontPageboxContainerProductsFeatured">';
 
             while ($Qproduct->fetch()) {
               $products_id = $Qproduct->valueInt('products_id');
@@ -177,7 +143,7 @@
 //product name
               $products_name = $CLICSHOPPING_ProductsCommon->getProductsName($products_id);
 //Stock (good, alert, out of stock).
-              $products_stock = $CLICSHOPPING_ProductsFunctionTemplate->getStock(MODULE_FRONT_PAGE_NEW_PRODUCTS_DISPLAY_STOCK, $products_id);
+              $products_stock = $CLICSHOPPING_ProductsFunctionTemplate->getStock(MODULE_FRONT_PAGE_PRODUCTS_FEATURED_DISPLAY_STOCK, $products_id);
 //Flash discount
               $products_flash_discount = $CLICSHOPPING_ProductsFunctionTemplate->getFlashDiscount($products_id, '<br />');
 // Minimum quantity to take an order
@@ -190,7 +156,7 @@
 
               $CLICSHOPPING_ProductsCommon->getBuyButton($buy_button);
 // Display an input allowing for the customer to insert a quantity
-              $input_quantity = $CLICSHOPPING_ProductsFunctionTemplate->getDisplayInputQuantity(MODULE_FRONT_PAGE_NEW_PRODUCTS_DELETE_BUY_BUTTON, $products_id);
+              $input_quantity = $CLICSHOPPING_ProductsFunctionTemplate->getDisplayInputQuantity(MODULE_FRONT_PAGE_PRODUCTS_FEATURED_DELETE_BUY_BUTTON, $products_id);
 // display the differents prices before button
               $product_price = $CLICSHOPPING_ProductsCommon->getCustomersPrice($products_id);
 //Short description
@@ -203,7 +169,7 @@
               $form = '';
               $endform = '';
 
-              if (MODULE_FRONT_PAGE_NEW_PRODUCTS_DELETE_BUY_BUTTON == 'False') {
+              if (MODULE_FRONT_PAGE_PRODUCTS_FEATURED_DELETE_BUY_BUTTON == 'False') {
                 if ($CLICSHOPPING_ProductsCommon->getProductsMinimumQuantity($products_id) != 0 && $CLICSHOPPING_ProductsCommon->getProductsQuantity($products_id) != 0) {
                   if ($CLICSHOPPING_ProductsAttributes->getHasProductAttributes($products_id) === false) {
                     $form =  HTML::form('cart_quantity', CLICSHOPPING::link(null, 'Cart&Add' ),'post','class="justify-content-center"', ['tokenize' => true]). "\n";
@@ -242,17 +208,13 @@
               }
 
 // See the button more view details
-//              $button_small_view_details = $CLICSHOPPING_ProductsFunctionTemplate->getButtonViewDetails(MODULE_FRONT_PAGE_NEW_PRODUCTS_DELETE_BUY_BUTTON, $products_id);
-              $button_small_view_details = $CLICSHOPPING_ProductsFunctionTemplate->getButtonViewDetails(MODULE_FRONT_PAGE_NEW_PRODUCTS_DELETE_BUY_BUTTON, $products_id, 'far fa-eye fa-2x', 'link', null, 'sm');
-
+               $button_small_view_details = $CLICSHOPPING_ProductsFunctionTemplate->getButtonViewDetails(MODULE_FRONT_PAGE_PRODUCTS_FEATURED_DELETE_BUY_BUTTON, $products_id);
 // Display the image
-//              $products_image = $CLICSHOPPING_ProductsFunctionTemplate->getImage(MODULE_FRONT_PAGE_NEW_PRODUCTS_IMAGE_MEDIUM, $products_id);
-              $products_image = $CLICSHOPPING_ProductsFunctionTemplate->getImage('Medium', $products_id);
-
+              $products_image = $CLICSHOPPING_ProductsFunctionTemplate->getImage(MODULE_FRONT_PAGE_PRODUCTS_FEATURED_IMAGE_MEDIUM, $products_id);
 // Ticker Image
-              $products_image .= $CLICSHOPPING_ProductsFunctionTemplate->getTicker(MODULE_FRONT_PAGE_NEW_PRODUCTS_TICKER, $products_id, 'ModulesFrontPageTickerBootstrapTickerSpecial', 'ModulesFrontPageTickerBootstrapTickerFavorite', 'ModulesFrontPageTickerBootstrapTickerFeatured', 'ModulesFrontPageTickerBootstrapTickerNew');
+              $products_image .= $CLICSHOPPING_ProductsFunctionTemplate->getTicker(MODULE_FRONT_PAGE_PRODUCTS_FEATURED_TICKER, $products_id, 'ModulesFrontPageTickerBootstrapTickerSpecial', 'ModulesFrontPageTickerBootstrapTickerFavorite', 'ModulesFrontPageTickerBootstrapTickerFeatured', 'ModulesFrontPageTickerBootstrapTickerNew');
 
-              $ticker = $CLICSHOPPING_ProductsFunctionTemplate->getTickerPourcentage(MODULE_FRONT_PAGE_NEW_PRODUCTS_POURCENTAGE_TICKER, $products_id, 'ModulesFrontPageTickerBootstrapTickerPourcentage');
+              $ticker = $CLICSHOPPING_ProductsFunctionTemplate->getTickerPourcentage(MODULE_FRONT_PAGE_PRODUCTS_FEATURED_POURCENTAGE_TICKER, $products_id, 'ModulesFrontPageTickerBootstrapTickerPourcentage');
 
 //******************************************************************************************************************
 //            Options -- activate and insert code in template and css
@@ -311,7 +273,7 @@
 
             $new_prods_content .= '</div>' . "\n";
 
-            $new_prods_content .= '<!-- New Products End -->' . "\n";
+            $new_prods_content .= '<!-- end New products featured -->' . "\n";
 
             $CLICSHOPPING_Template->addBlock($new_prods_content, $this->group);
           }
@@ -324,7 +286,7 @@
     }
 
     public function check() {
-      return defined('MODULE_FRONT_PAGE_NEW_PRODUCTS_STATUS');
+      return defined('MODULE_FRONT_PAGE_PRODUCTS_FEATURED_STATUS');
     }
 
     public function install() {
@@ -332,7 +294,7 @@
 
       $CLICSHOPPING_Db->save('configuration', [
           'configuration_title' => 'Do you want to enable this module ?',
-          'configuration_key' => 'MODULE_FRONT_PAGE_NEW_PRODUCTS_STATUS',
+          'configuration_key' => 'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_STATUS',
           'configuration_value' => 'True',
           'configuration_description' => 'Do you want to enable this module in your shop ?',
           'configuration_group_id' => '6',
@@ -343,10 +305,10 @@
       );
 
       $CLICSHOPPING_Db->save('configuration', [
-          'configuration_title' => 'Please select your template',
-          'configuration_key' => 'MODULE_FRONT_PAGE_NEW_PRODUCTS_TEMPLATE',
+          'configuration_title' => 'What type of template would you like to see displayed?',
+          'configuration_key' => 'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_TEMPLATE',
           'configuration_value' => 'template_bootstrap_column_5.php',
-          'configuration_description' => 'Select your template',
+          'configuration_description' => 'Please indicate the type of template you would like displayed. <br /> <br /> <b> Note </b> <br /> - If you have opted for an online configuration, please choose a type of name. template like <u> template_line </u>. <br /> <br /> - If you opted for a column display, please choose a type of template name like <u> template_column </u> and then configure the number of columns. <br />',
           'configuration_group_id' => '6',
           'sort_order' => '2',
           'set_function' => 'clic_cfg_set_multi_template_pull_down',
@@ -355,10 +317,10 @@
       );
 
       $CLICSHOPPING_Db->save('configuration', [
-          'configuration_title' => 'Do you want to display the title ?',
-          'configuration_key' => 'MODULE_FRONT_PAGE_NEW_PRODUCTS_FRONT_TITLE',
+          'configuration_title' => 'Do you want to display the title?',
+          'configuration_key' => 'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_FRONT_TITLE',
           'configuration_value' => 'True',
-          'configuration_description' => 'Display the title',
+          'configuration_description' => 'Displays the title of the module in the catalog',
           'configuration_group_id' => '6',
           'sort_order' => '3',
           'set_function' => 'clic_cfg_set_boolean_value(array(\'True\', \'False\'))',
@@ -367,10 +329,10 @@
       );
 
       $CLICSHOPPING_Db->save('configuration', [
-          'configuration_title' => 'Please indicate the number to display',
-          'configuration_key' => 'MODULE_FRONT_PAGE_NEW_PRODUCTS_MAX_DISPLAY',
+          'configuration_title' => 'Indicate the number of new products to display on the home page',
+          'configuration_key' => 'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_MAX_DISPLAY',
           'configuration_value' => '6',
-          'configuration_description' => 'Indicate the number to display.',
+          'configuration_description' => 'Veuillez indiquer le nombre maximum de produits à afficher.',
           'configuration_group_id' => '6',
           'sort_order' => '5',
           'set_function' => '',
@@ -379,10 +341,10 @@
       );
 
       $CLICSHOPPING_Db->save('configuration', [
-          'configuration_title' => 'Please indicate the number of column that you want to display ?',
-          'configuration_key' => 'MODULE_FRONT_PAGE_NEW_PRODUCTS_COLUMNS',
+          'configuration_title' => 'Please indicate the number of product columns you would like displayed?',
+          'configuration_key' => 'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_COLUMNS',
           'configuration_value' => '6',
-          'configuration_description' => 'Choose a number between 1 and 12',
+          'configuration_description' => 'Please indicate the number of product columns to display per line. <br /> <br /> Note: <br /> <br /> - Between 1 and 12',
           'configuration_group_id' => '6',
           'sort_order' => '6',
           'set_function' => 'clic_cfg_set_content_module_width_pull_down',
@@ -391,10 +353,10 @@
       );
 
       $CLICSHOPPING_Db->save('configuration', [
-          'configuration_title' => 'Do you want to display a short description ?',
-          'configuration_key' => 'MODULE_FRONT_PAGE_NEW_PRODUCTS_SHORT_DESCRIPTION',
+          'configuration_title' => 'Souhaitez-vous afficher une description courte des produits ?',
+          'configuration_key' => 'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_SHORT_DESCRIPTION',
           'configuration_value' => '0',
-          'configuration_description' => 'Please indicate a number of your short description',
+          'configuration_description' => 'Please indicate the length of this description. <br /> <br /> <i> - 0 for no description <br> - 50 for the first 50 characters </i>',
           'configuration_group_id' => '6',
           'sort_order' => '7',
           'set_function' => '',
@@ -403,10 +365,10 @@
       );
 
       $CLICSHOPPING_Db->save('configuration', [
-          'configuration_title' => 'Do you want to remove words of your short description ?',
-          'configuration_key' => 'MODULE_FRONT_PAGE_NEW_PRODUCTS_SHORT_DESCRIPTION_DELETE_WORLDS',
+          'configuration_title' => 'Do you want to delete a certain length of descriptive text?',
+          'configuration_key' => 'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_SHORT_DESCRIPTION_DELETE_WORLDS',
           'configuration_value' => '0',
-          'configuration_description' => 'Please indicate a number',
+          'configuration_description' => 'Please indicate the number of words to delete. This system is useful with the tab module <br /> <br /> <i> - 0 for no deletion <br /> - 50 for the first 50 characters </i>',
           'configuration_group_id' => '6',
           'sort_order' => '8',
           'set_function' => '',
@@ -415,10 +377,10 @@
       );
 
       $CLICSHOPPING_Db->save('configuration', [
-          'configuration_title' => 'Do you want to display a message News / Specials / Favorites / Featured ?',
-          'configuration_key' => 'MODULE_FRONT_PAGE_NEW_PRODUCTS_TICKER',
+          'configuration_title' => 'Do you want to display a message New / Special / Featured / Favorites?',
+          'configuration_key' => 'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_TICKER',
           'configuration_value' => 'False',
-          'configuration_description' => 'Display a message News / Specials / Favorites / Featured',
+          'configuration_description' => 'Display a message New / Promotion / Selection / Favorites superimposed on the image of the product? <br /> <br /> the duration is configurable in the Configuration menu / my shop / Minimum / maximum values <br /> < br /> <i> (Value true = Yes - Value false = No) </i>',
           'configuration_group_id' => '6',
           'sort_order' => '9',
           'set_function' => 'clic_cfg_set_boolean_value(array(\'True\', \'False\'))',
@@ -427,10 +389,10 @@
       );
 
       $CLICSHOPPING_Db->save('configuration', [
-          'configuration_title' => 'Do you want to display the discount pourcentage (specials) ?',
-          'configuration_key' => 'MODULE_FRONT_PAGE_NEW_PRODUCTS_POURCENTAGE_TICKER',
+          'configuration_title' => 'Would you like to display the percentage reduction of the price (special) ?',
+          'configuration_key' => 'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_POURCENTAGE_TICKER',
           'configuration_value' => 'False',
-          'configuration_description' => 'Display the discount pourcentage (specials)',
+          'configuration_description' => 'Show the percentage reduction of the price',
           'configuration_group_id' => '6',
           'sort_order' => '9',
           'set_function' => 'clic_cfg_set_boolean_value(array(\'True\', \'False\'))',
@@ -439,10 +401,10 @@
       );
 
       $CLICSHOPPING_Db->save('configuration', [
-          'configuration_title' => 'Do you want to display the stock ?',
-          'configuration_key' => 'MODULE_FRONT_PAGE_NEW_PRODUCTS_DISPLAY_STOCK',
+          'configuration_title' => 'Would you like to display an image regarding the stock status of the product ?',
+          'configuration_key' => 'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_DISPLAY_STOCK',
           'configuration_value' => 'none',
-          'configuration_description' => 'Display the stock (in stock, exhaused, out of stock) ?',
+          'configuration_description' => 'Do you want to display an image indicating information on the stock of the product (In stock, practically sold out, out of stock) ?',
           'configuration_group_id' => '6',
           'sort_order' => '10',
           'set_function' => 'clic_cfg_set_boolean_value(array(\'none\', \'image\', \'number\'))',
@@ -451,10 +413,10 @@
       );
 
       $CLICSHOPPING_Db->save('configuration', [
-          'configuration_title' => 'Please choose the image size',
-          'configuration_key' => 'MODULE_FRONT_PAGE_NEW_PRODUCTS_IMAGE_MEDIUM',
+          'configuration_title' => 'Please choose an image display size',
+          'configuration_key' => 'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_IMAGE_MEDIUM',
           'configuration_value' => 'Small',
-          'configuration_description' => 'Choose a size, small or medium to display',
+          'configuration_description' => 'What image size do you want to display?',
           'configuration_group_id' => '6',
           'sort_order' => '11',
           'set_function' => 'clic_cfg_set_boolean_value(array(\'Small\', \'Medium\'))',
@@ -463,10 +425,10 @@
       );
 
       $CLICSHOPPING_Db->save('configuration', [
-          'configuration_title' => 'Do you want to remove the details button ?',
-          'configuration_key' => 'MODULE_FRONT_PAGE_NEW_PRODUCTS_DELETE_BUY_BUTTON',
+          'configuration_title' => 'Do you want to delete the Buy and Retail button ?',
+          'configuration_key' => 'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_DELETE_BUY_BUTTON',
           'configuration_value' => 'False',
-          'configuration_description' => 'Remove the button details',
+          'configuration_description' => 'Remove buy and retail button',
           'configuration_group_id' => '6',
           'sort_order' => '11',
           'set_function' => 'clic_cfg_set_boolean_value(array(\'True\', \'False\'))',
@@ -476,8 +438,8 @@
 
       $CLICSHOPPING_Db->save('configuration', [
           'configuration_title' => 'Sort order',
-          'configuration_key' => 'MODULE_FRONT_PAGE_NEW_PRODUCTS_SORT_ORDER',
-          'configuration_value' => '110',
+          'configuration_key' => 'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_SORT_ORDER',
+          'configuration_value' => '140',
           'configuration_description' => 'Sort order of display. Lowest is displayed first. The sort order must be different on every module',
           'configuration_group_id' => '6',
           'sort_order' => '12',
@@ -496,19 +458,19 @@
     }
 
     public function keys() {
-      return array ('MODULE_FRONT_PAGE_NEW_PRODUCTS_STATUS',
-                    'MODULE_FRONT_PAGE_NEW_PRODUCTS_TEMPLATE',
-                    'MODULE_FRONT_PAGE_NEW_PRODUCTS_FRONT_TITLE',
-                    'MODULE_FRONT_PAGE_NEW_PRODUCTS_MAX_DISPLAY',
-                    'MODULE_FRONT_PAGE_NEW_PRODUCTS_COLUMNS',
-                    'MODULE_FRONT_PAGE_NEW_PRODUCTS_SHORT_DESCRIPTION',
-                    'MODULE_FRONT_PAGE_NEW_PRODUCTS_SHORT_DESCRIPTION_DELETE_WORLDS',
-                    'MODULE_FRONT_PAGE_NEW_PRODUCTS_TICKER',
-                    'MODULE_FRONT_PAGE_NEW_PRODUCTS_POURCENTAGE_TICKER',
-                    'MODULE_FRONT_PAGE_NEW_PRODUCTS_DISPLAY_STOCK',
-                    'MODULE_FRONT_PAGE_NEW_PRODUCTS_IMAGE_MEDIUM',
-                    'MODULE_FRONT_PAGE_NEW_PRODUCTS_DELETE_BUY_BUTTON',
-                    'MODULE_FRONT_PAGE_NEW_PRODUCTS_SORT_ORDER'
+      return array ('MODULE_FRONT_PAGE_PRODUCTS_FEATURED_STATUS',
+                    'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_TEMPLATE',
+                    'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_FRONT_TITLE',
+                    'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_MAX_DISPLAY',
+                    'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_COLUMNS',
+                    'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_SHORT_DESCRIPTION',
+                    'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_SHORT_DESCRIPTION_DELETE_WORLDS',
+                    'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_TICKER',
+                    'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_POURCENTAGE_TICKER',
+                    'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_DISPLAY_STOCK',
+                    'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_IMAGE_MEDIUM',
+                    'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_DELETE_BUY_BUTTON',
+                    'MODULE_FRONT_PAGE_PRODUCTS_FEATURED_SORT_ORDER'
                    );
     }
   }
