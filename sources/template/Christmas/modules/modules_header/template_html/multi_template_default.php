@@ -18,7 +18,7 @@
           <span class="col-md-2 col-sm-12">
             <div class="row">
               <span class="col-md-6 col-sm-12"><?php echo $currency_header; ?></span>
-              <span class="col-md-6 col-sm-12 float-md-right text-md-left headerMultiTemplateDefaultLanguage">
+              <span class="col-md-6 col-sm-12 float-end text-md-left headerMultiTemplateDefaultLanguage">
                 <ul>
                   <li class="headerMultiTemplateDefaultLanguage"><?php echo $languages_string; ?></li>
                 </ul>
@@ -55,15 +55,15 @@ if (!$CLICSHOPPING_Customer->isLoggedOn()) {
                   <div class="row">
                     <div class="col-md-12">
                       <label for="inputAddressEmailLogin" class="sr-only"><?php echo CLICSHOPPING::getDef('modules_header_multi_template_header_email_address'); ?></label>
-                      <span class="col-md-3 float-md-left text-md-left headerMultiTemplateDefaultLoginText"  id="inputAddressEmailLogin"><?php echo CLICSHOPPING::getDef('modules_header_multi_template_header_email_address'); ?></span>
-                      <span class="col-md-9 float-md-right"><?php echo HTML::inputField('email_address', null, 'id="inputAddressEmail" autocomplete="username" aria-describedby="' . CLICSHOPPING::getDef('modules_header_multi_template_header_email_address') . '" placeholder="' . CLICSHOPPING::getDef('modules_header_multi_template_header_email_address') . '"', 'email'); ?></span>
+                      <span class="col-md-3 float-start text-md-left headerMultiTemplateDefaultLoginText"  id="inputAddressEmailLogin"><?php echo CLICSHOPPING::getDef('modules_header_multi_template_header_email_address'); ?></span>
+                      <span class="col-md-9 float-end"><?php echo HTML::inputField('email_address', null, 'id="inputAddressEmail" autocomplete="username" aria-describedby="' . CLICSHOPPING::getDef('modules_header_multi_template_header_email_address') . '" placeholder="' . CLICSHOPPING::getDef('modules_header_multi_template_header_email_address') . '"', 'email'); ?></span>
                     </div>
                   </div>
                   <div class="row">
                     <div class="col-md-12">
                       <label for="inputAddressPasswordLogin" class="sr-only"><?php echo CLICSHOPPING::getDef('modules_header_multi_template_account_password'); ?></label>
-                      <span class="col-md-3 float-md-left text-md-left headerMultiTemplateDefaultPasswordText" id="inputAddressPasswordLogin"><?php echo CLICSHOPPING::getDef('modules_header_multi_template_account_password'); ?></span>
-                      <span class="col-md-9 float-md-right"><?php echo HTML::inputField('password', null, 'id="current-password" autocomplete="current-password" aria-describedby="' . CLICSHOPPING::getDef('modules_header_multi_template_account_password') . '" placeholder="' . CLICSHOPPING::getDef('modules_header_multi_template_account_password') . '"', 'password'); ?></span>
+                      <span class="col-md-3 float-start text-md-left headerMultiTemplateDefaultPasswordText" id="inputAddressPasswordLogin"><?php echo CLICSHOPPING::getDef('modules_header_multi_template_account_password'); ?></span>
+                      <span class="col-md-9 float-end"><?php echo HTML::inputField('password', null, 'id="current-password" autocomplete="current-password" aria-describedby="' . CLICSHOPPING::getDef('modules_header_multi_template_account_password') . '" placeholder="' . CLICSHOPPING::getDef('modules_header_multi_template_account_password') . '"', 'password'); ?></span>
                     </div>
                   </div>
                   <div class="separator"></div>
@@ -102,7 +102,7 @@ if (!$CLICSHOPPING_Customer->isLoggedOn()) {
           <span class="col-md-3 col-sm-12 text-md-center headerMultiTemplateDefaultLogo"><?php echo $logo_header; ?></span>
         <span class="col-md-6 col-sm-6 text-md-right"><?php echo $banner_header; ?></span>
 
-          <span class="col-md-3 float-md-right text-md-right headerMultiTemplateDefaultCartLink">
+          <span class="col-md-3 float-end text-md-right headerMultiTemplateDefaultCartLink">
 <?php
 if ($CLICSHOPPING_ShoppingCart->getCountContents() > 0) {
   ?>
@@ -116,21 +116,21 @@ $products = $CLICSHOPPING_ShoppingCart->get_products();
 
 foreach ($products as $k => $v) {
   echo '<li class="headerMultiTemplateDefaultLi">&nbsp;&nbsp;
-            <span class="float-md-left">' . $v['quantity'] . ' - ' . $v['name'] . '</span>
-            <span class="float-md-right">' .  $CLICSHOPPING_Currencies->displayPrice($v['final_price'], $CLICSHOPPING_Tax->getTaxRate($v['tax_class_id']), $v['quantity']) . '</span>
+            <span class="float-start">' . $v['quantity'] . ' - ' . $v['name'] . '</span>
+            <span class="float-end">' .  $CLICSHOPPING_Currencies->displayPrice($v['final_price'], $CLICSHOPPING_Tax->getTaxRate($v['tax_class_id']), $v['quantity']) . '</span>
          </li>
          ';
 }
 ?>
                 <li role="separator" class="h-divider"></li>
                 <li class="headerMultiTemplateDefaultLi">&nbsp;&nbsp;
-                  <span class="float-md-left"><?php echo CLICSHOPPING::getDef('modules_header_multi_template_shopping_cart_total_content'); ?></span>
-                  <span class="float-md-right text-md-right"><?php echo $CLICSHOPPING_Currencies->format($CLICSHOPPING_ShoppingCart->show_total()); ?></span>
+                  <span class="float-start"><?php echo CLICSHOPPING::getDef('modules_header_multi_template_shopping_cart_total_content'); ?></span>
+                  <span class="float-end text-md-right"><?php echo $CLICSHOPPING_Currencies->format($CLICSHOPPING_ShoppingCart->show_total()); ?></span>
                 </li>
                 <li role="separator" class="h-divider"></li>
                 <li class="headerMultiTemplateDefaultLi">
-                  <span class="float-md-left headerMultiTemplateDefaultShoppingSmallCart"><i class="fas fa-shopping-cart">&nbsp;&nbsp;</i><?php echo HTML::link(ClicShopping::link(null, 'Cart'), CLICSHOPPING::getDef('modules_header_multi_template_shopping_cart_view_cart')); ?></span>
-                  <span class="float-md-right headerMultiTemplateDefaultCheckout"><i class="fas fa-angle-right"></i>&nbsp;&nbsp;<?php echo HTML::link(ClicShopping::link(null, 'Checkout&Shipping'), CLICSHOPPING::getDef('modules_header_multi_template_shopping_cart_checkout')); ?></span>
+                  <span class="float-start headerMultiTemplateDefaultShoppingSmallCart"><i class="fas fa-shopping-cart">&nbsp;&nbsp;</i><?php echo HTML::link(ClicShopping::link(null, 'Cart'), CLICSHOPPING::getDef('modules_header_multi_template_shopping_cart_view_cart')); ?></span>
+                  <span class="float-end headerMultiTemplateDefaultCheckout"><i class="fas fa-angle-right"></i>&nbsp;&nbsp;<?php echo HTML::link(ClicShopping::link(null, 'Checkout&Shipping'), CLICSHOPPING::getDef('modules_header_multi_template_shopping_cart_checkout')); ?></span>
                 </li>
               </ul>
             </li>
